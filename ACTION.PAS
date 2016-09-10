@@ -5,7 +5,7 @@ Const Sprite_Anzahl=77;          {Anzahl im Programm verwendeter Sprites}
 Var Sprite:Array[1..Sprite_Anzahl] of SpriteTyp;
     zz:array[1..5] of spritetyp;
     qq,zzz,p,z,ii,n,i:Word;                     {Z„hler}
-    taste,c:byte;
+    temp,taste,c:byte;
     power1,power2,cheat,boni,bomben,leben:integer;
     palette1,
     origpal,
@@ -78,9 +78,6 @@ begin
     for i:=1 to 39 do begin
      if sprite[i].ja=false then begin
       inc(schus);
-      sound(200);
-      delay(5);
-      nosound;
       sprite[i].ja:=true;
       sprite[i].px:=sprite[blubb].px-7;
       if streu then sprite[i].py:=sprite[blubb].py+random(40)-20 else sprite[i].py:=sprite[blubb].py+1;
@@ -92,7 +89,6 @@ begin
     for i:=57 to 77 do begin
      if sprite[i].ja=false then begin
       inc(schus);
-      sound(300);delay(5);nosound;
       if random(100)>50 then sprite[i].sx:=0 else sprite[i].sx:=1;
       sprite[i].ja:=true;
       sprite[i].px:=sprite[blubb].px-17;
@@ -134,6 +130,13 @@ end;
 
 
 Begin
+ port[$60]:=$f3;
+ port[$60]:=0;
+ port[$64]:=$20;
+ temp:=port[$60];
+ if temp mod 2=1 then dec(temp);
+ port[$64]:=$60;
+ port[$60]:=temp;
  chdir('c:\pcunder\grafik');
  boni:=2;
  streu:=true;
@@ -360,6 +363,7 @@ Begin
   end;
     if keypressed then begin
     a:=readkey;
+    if keypressed then a:=readkey;
     if keydown[$39] then for qq:=1 to boni do begin
      if power2>10 then begin dec(power2,10);schuss(56);end;end;
     if keydown[$48] then if sprite[56].py>5 then dec(sprite[56].py,5);
@@ -379,6 +383,7 @@ Begin
     end;
     if keypressed then begin
     a:=readkey;
+    if keypressed then a:=readkey;
     if keydown[$39] then for qq:=1 to boni div 2 do begin
     if power2>10 then begin dec(power2,10);schuss(56);end;end;
     if keydown[$48] then if sprite[56].py>5 then dec(sprite[56].py,5);
