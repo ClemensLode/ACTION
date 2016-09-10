@@ -1,0 +1,10 @@
+kirche.voc
+volled.voc
+voc2.voc
+voc3.voc
+voc5.voc
+enter.voc
+intro.voc
+fatality.voc
+zwichen.voc
+stored.voc
