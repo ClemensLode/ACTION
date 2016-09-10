@@ -1,0 +1,49 @@
+Ziel des Spieles : mîglichst alle feindlichen Frachter abschiessen
+Sobald ein gegnerischer Frachter den linken Bildschirm Åberquert hat, 
+wird automatisch die Selbstzerstîrung eingeleitet.
+
+
+1. SchiffausrÅstung 
+
+1.1. Allgemein :
+3 Bomben
+3 Leben
+
+1.2. Player 1:
+schnelles Raumschiff 
+Einlaser-Bordkanone
+Streufeuer
+
+1.3. Player 2:
+langsames Raumschiff mit Duallaser-Bordkanone
+Streufeuer
+
+
+2.Tasten
+
+2.1. Allgemein :
+Bombe abwerfen :   B  
+The end        : <ESC>
+Waffen wechseln: <Tabulator>
+Neustart       : <Strg>+<Alt>+<Entf>
+
+
+2.2. Player 1 : 
+Bewegung : Maus 
+Schuss   : Maustasten
+
+2.3. Player 2 :
+Bewegung : Pfeiltasten
+Schuss   : Leertaste
+
+
+3. Probleme 
+Dieses Spiel unterstÅtzt SB16,SB pro und SB (hoff' ich jedenfalls)
+Die Soundkarteneinstellungen werden automatisch erkannt.
+Bei Problemen lîschen Sie Windows und versuchen Sie es nochmals.
+
+P.S. Falls Sie das Spiel unter Windows 0.0 + laufen lassen wollen
+(WAGEN SIE ES NICHT!) Åbernehme ich keine Verantwortung Åber
+seltsame SystemabstÅze, Festplattencrashes, Monitorexplosionen, ...
+(Was man halt von Windows 0.0+ kennt)
+
