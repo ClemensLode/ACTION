@@ -6,13 +6,13 @@ Var Sprite:Array[1..Sprite_Anzahl] of SpriteTyp;
     zz:array[1..5] of spritetyp;
     qq,zzz,p,z,ii,n,i:Word;                     {Z„hler}
     taste,c:byte;
-    cheat,boni,bomben,leben:integer;
+    power1,power2,cheat,boni,bomben,leben:integer;
     palette1,
     origpal,
     zielpal:Array[0..767] of Byte;
     missile,streu:boolean;
     a:char;
-
+    schus,hit:longint;
 procedure putship(y,x:word;temp:byte);
 begin
  putsprite(24000,x,y,sprite[temp]);
@@ -63,21 +63,21 @@ end;
 
 procedure Spiele_Vocdatei(datname : string;ak:boolean);
 begin
- {Init_Voc(datname);
+ Init_Voc(datname);
  if ak then begin
   repeat until keypressed or (mauspressed>0) or voc_ready
  end else begin
   repeat until voc_ready;
  end;
- voc_done;}
+ voc_done;
 end;
 
 procedure schuss(blubb:integer);
 begin
-  inc(n);if n>1 then begin n:=0;
    if missile=false then begin
     for i:=1 to 39 do begin
      if sprite[i].ja=false then begin
+      inc(schus);
       sound(200);
       delay(5);
       nosound;
@@ -91,18 +91,19 @@ begin
    end else begin
     for i:=57 to 77 do begin
      if sprite[i].ja=false then begin
+      inc(schus);
       sound(300);delay(5);nosound;
       if random(100)>50 then sprite[i].sx:=0 else sprite[i].sx:=1;
       sprite[i].ja:=true;
       sprite[i].px:=sprite[blubb].px-17;
       sprite[i].py:=sprite[blubb].py+1;
-      if (sprite[i].py<1) or (sprite[i].py>200) then sprite[i].ja:=fAlse;
+      if (sprite[i].py<3) or (sprite[i].py>197) then sprite[i].ja:=fAlse;
       exit;
      end;
     end;
    end;
   end;
- end;
+ {end;}
 procedure bomb;
 var q:integer;
 begin
@@ -133,11 +134,9 @@ end;
 
 
 Begin
- boni:=3;
+ chdir('c:\pcunder\grafik');
+ boni:=2;
  streu:=true;
- cheat:=3;
- Init_SB;
- delay(1333);
  bomben:=3;
  textbackground(red);
  textcolor(green);
@@ -145,10 +144,13 @@ Begin
  writeln('Player 1 : Steuerung mit Maus. Schuss mit Maustaste.');
  writeln('Player 2 : Steuerung mit Pfeiltasten. Schuss mit Leertaste');
  writeln('Bombe abwerfen mit b oder B. Ende mit <ESC>');
+ Init_SB;
+ delay(1333);
  readln;
  leben:=3;
  randomize;
  Init_ModeX;                   {Mode X einschalten}
+ power1:=500;power2:=500;
  LoadGif('back');             {Hintergrundbild laden}
  p13_2_ModeX(vpage,24000);     {und auf Hintergrundseite kopieren}
  LoadGif('actions2');           {Bild mit den drei Sprites laden}
@@ -255,7 +257,8 @@ Begin
   putship(mausy,MAUSX,40);
   putship(sprite[56].py,sprite[56].px,56);
   if mauspressed=1 then begin
-   for qq:=2 to boni do schuss(40);
+   for qq:=2 to boni do begin
+    if power1>10 then begin dec(power1,10);schuss(40);end;end;
   end;
   for i:=1 to 39 do begin
    if sprite[i].ja=true then begin
@@ -270,6 +273,7 @@ Begin
      if (sprite[i].px<=sprite[ii].px+10) and (sprite[i].py<=sprite[ii].py+10) and (sprite[i].px>=sprite[ii].px-10)
      and (sprite[i].py>=sprite[ii].py-10) then begin
       dec(sprite[ii].le);sprite[i].ja:=false;
+      inc(hit);
       if sprite[ii].le<1 then begin
        inc(p);
        if random(10000)>9500 then spiele_vocdatei('asta.voc',false);
@@ -328,7 +332,7 @@ Begin
   end;
   for ii:=41 to 55 do begin
    if sprite[ii].le>6 then sprite[ii].le:=6;
-   dec(sprite[ii].px,boni-cheat);
+   dec(sprite[ii].px,boni-1);
    putsprite(24000,sprite[ii].px,sprite[ii].py,sprite[ii]);
    if sprite[ii].px<=1 then begin
     dec(leben);
@@ -337,22 +341,31 @@ Begin
     bomb;
     sprite[ii].py:=random(180)+1;sprite[ii].px:=310;
     if leben<1 then begin
-     spiele_vocdatei('ende.voc',false);
      TextMode(3);
      textbackground(red);
      textcolor(green);
      writeln('Erreichtes Level: ',boni-1);
      writeln('Points: ',p*100);
+     writeln('Anzahl abgefeuerter Schsse: ',schus);
+     writeln('Trefferquote: ',round((hit/schus)*100),' %');
+     if round((hit/schus)*100)>100 then writeln('Wow! You got many ships with a double hit!');
+     if (boni-1>10) and (boni-1<20) then writeln('Oh super! You was in a high level!');
+     if boni-1>20 then writeln('Oh dear, you had cracked my wonderful game. I must hide the Variables');
+     spiele_vocdatei('ende.voc',false);
+     readln;
      halt;
 
     end;
    end;
   end;
-    if keydown[$39] then for qq:=1 to boni do schuss(56);
-    if keydown[$48] then if sprite[56].py>5 then dec(sprite[56].py,10);
-    if keydown[$4B] then if sprite[56].px>5 then dec(sprite[56].px,10);
-    if keydown[$4D] then if sprite[56].px<315 then inc(sprite[56].px,10);
-    if keydown[$50] then if sprite[56].py<195 then inc(sprite[56].py,10);
+    if keypressed then begin
+    a:=readkey;
+    if keydown[$39] then for qq:=1 to boni do begin
+     if power2>10 then begin dec(power2,10);schuss(56);end;end;
+    if keydown[$48] then if sprite[56].py>5 then dec(sprite[56].py,5);
+    if keydown[$4B] then if sprite[56].px>5 then dec(sprite[56].px,5);
+    if keydown[$4D] then if sprite[56].px<315 then inc(sprite[56].px,5);
+    if keydown[$50] then if sprite[56].py<195 then inc(sprite[56].py,5);
     if keydown[$30] then bomb;
     if keydown[$0F] then
     begin
@@ -363,11 +376,51 @@ Begin
       if missile=true then begin streu:=true;missile:=false;end else missile:=true;
      end;
     end;
+    end;
+    if keypressed then begin
+    a:=readkey;
+    if keydown[$39] then for qq:=1 to boni div 2 do begin
+    if power2>10 then begin dec(power2,10);schuss(56);end;end;
+    if keydown[$48] then if sprite[56].py>5 then dec(sprite[56].py,5);
+    if keydown[$4B] then if sprite[56].px>5 then dec(sprite[56].px,5);
+    if keydown[$4D] then if sprite[56].px<315 then inc(sprite[56].px,5);
+    if keydown[$50] then if sprite[56].py<195 then inc(sprite[56].py,5);
+    if keydown[$30] then bomb;
+    if keydown[$0F] then
+    begin
+     spiele_vocdatei('ratch2.voc',false);
+     if streu=true then begin
+      missile:=false;streu:=false;
+     end else begin
+      if missile=true then begin streu:=true;missile:=false;end else missile:=true;
+     end;
+    end;
+    end;
+   for c:=1 to leben do putsprite(24000,c*20+1,180,sprite[56]);
+  if power1<500+(boni*100) then inc(power1,5);
+  if power2<500+(boni*100) then inc(power2,5);
+  if missile then begin
+   for c:=1 to power1 div 30 do putsprite(24000,300,c*2,sprite[60]);
+   for c:=1 to power2 div 30 do putsprite(24000,300,200-c*2,sprite[60]);
+  end else begin
+   for c:=1 to power1 div 20 do putsprite(24000,300,c,sprite[25]);
+   for c:=1 to power2 div 20 do putsprite(24000,300,200-c,sprite[25]);end;
+   for c:=1 to p div 5 do putsprite(24000,280,c,sprite[50]);
  until keydown[1];
  TextMode(3);
  textbackground(red);
  textcolor(green);
  writeln('Erreichtes Level: ',boni-1);
  writeln('Points: ',p*100);
+ writeln('Anzahl abgefeuerter Schsse: ',schus);
+ writeln('Anzahl getroffener  Schsse: ',hit);
+ if schus>0 then begin
+ writeln('Trefferquote: ',round((hit/schus)*100),' %');
+ if round((hit/schus)*100)>100 then writeln('Wow! You got many ships with a double hit!');
+ end else
+ writeln('BUUU! You have NO Trefferquote! Play it again without press escape!');
+ if (boni-1>10) and (boni-1<20) then writeln('Oh super! You was in a high level!');
+ if boni>20 then writeln('Oh dear, you had cracked my wonderful game. I must hide the Variables');
  spiele_vocdatei('ende.voc',false);
+readln;
 End.
