@@ -1,249 +1,373 @@
-Uses Crt,dos,Gif,ModeXLib,Sprites,enh256;
+Uses Crt,dos,Gif,ModeXLib,Sprites,vocplay,tastatur;
 
-Const Sprite_Anzahl=50;          {Anzahl im Programm verwendeter Sprites}
+Const Sprite_Anzahl=77;          {Anzahl im Programm verwendeter Sprites}
 
 Var Sprite:Array[1..Sprite_Anzahl] of SpriteTyp;
-    p,z,ii,n,i:Word;                     {Z„hler}
-    c:byte;
-    bomben,leben:integer;
+    zz:array[1..5] of spritetyp;
+    qq,zzz,p,z,ii,n,i:Word;                     {Z„hler}
+    taste,c:byte;
+    cheat,boni,bomben,leben:integer;
     palette1,
     origpal,
     zielpal:Array[0..767] of Byte;
-    back,streu:boolean;
+    missile,streu:boolean;
     a:char;
-    tastx,tasty:integer;
+
 procedure putship(y,x:word;temp:byte);
 begin
-putsprite(24000,x,y,sprite[temp]);
+ putsprite(24000,x,y,sprite[temp]);
 end;
 
 procedure bewegung(x:word);
 begin
-inc(x);
-if x>=310 then sprite[i].ja:=false;
+ inc(x);
+ if x>=310 then sprite[i].ja:=false;
 end;
 
 function mauspressed:byte;
 var g:registers;
 begin
-g.ax:=3;
-intr($33,g);
-mauspressed:=g.bx;
+ g.ax:=3;
+ intr($33,g);
+ mauspressed:=g.bx;
 end;
 
 function mausy:word;
-var g:registers;
-temp:word;
+var y:word;
 begin
-g.ax:=3;
-intr($33,g);
-temp:=g.dx;
-if temp>192 then temp:=190;
-if temp<1 then temp:=4;
-mausy:=temp;
+  asm
+     mov ax,0003h              {Funktion 0bh: relative Koordinaten lesen}
+     int 33h
+     mov y,dx                  {Division durch 2}
+   End;
+ if y>200 then y:=200;
+ if y<1 then y:=1;
+ mausy:=y;
+ sprite[40].py:=y;
 end;
 
 
 function mausx:word;
-var g:registers;
-temp:word;
+var x:word;
 begin
-g.ax:=3;
-intr($33,g);
-temp:=g.cx;
-if temp>312 then temp:=310;
-if temp<1 then temp:=4;
-mausx:=temp;
+  asm
+     mov ax,0003h              {Funktion 0bh: relative Koordinaten lesen}
+     int 33h
+     mov x,cx
+  End;
+ if x>320 then x:=320;
+ if x<1 then x:=1;
+ mausx:=x;
+ sprite[40].px:=x;
 end;
-{procedure putmaus(y:word);
-begin
-if (y>200) then y:=200;
-if (y<1) then y:=1;
-sprite[11].py:=y;
-PutSprite(vpage,30,sprite[11].py,Sprite[11]);
-end;}
 
-procedure schuss;
+procedure Spiele_Vocdatei(datname : string;ak:boolean);
 begin
-if back=false then begin
-for i:=1 to 19 do begin
-if sprite[i].ja=false then begin
-sprite[i].ja:=true;
-sprite[i].px:=tastx-7;
-if streu then sprite[i].py:=tasty+random(40)-20 else sprite[i].py:=tasty+1;
-sound(600);delay(10);nosound;
-exit;
+ {Init_Voc(datname);
+ if ak then begin
+  repeat until keypressed or (mauspressed>0) or voc_ready
+ end else begin
+  repeat until voc_ready;
+ end;
+ voc_done;}
 end;
-end;
-end else begin
-for i:=28 to 44 do begin
-if sprite[i].ja=false then begin
-sprite[i].ja:=true;
-sprite[i].px:=tastx-7;
-sprite[i].py:=tasty+1;
-sound(400);delay(10);nosound;
-exit;
-end;
-end;
-end;end;
+
+procedure schuss(blubb:integer);
+begin
+  inc(n);if n>1 then begin n:=0;
+   if missile=false then begin
+    for i:=1 to 39 do begin
+     if sprite[i].ja=false then begin
+      sound(200);
+      delay(5);
+      nosound;
+      sprite[i].ja:=true;
+      sprite[i].px:=sprite[blubb].px-7;
+      if streu then sprite[i].py:=sprite[blubb].py+random(40)-20 else sprite[i].py:=sprite[blubb].py+1;
+      if (sprite[i].py<1) or (sprite[i].py>200) then sprite[i].ja:=fAlse;
+      exit;
+     end;
+    end;
+   end else begin
+    for i:=57 to 77 do begin
+     if sprite[i].ja=false then begin
+      sound(300);delay(5);nosound;
+      if random(100)>50 then sprite[i].sx:=0 else sprite[i].sx:=1;
+      sprite[i].ja:=true;
+      sprite[i].px:=sprite[blubb].px-17;
+      sprite[i].py:=sprite[blubb].py+1;
+      if (sprite[i].py<1) or (sprite[i].py>200) then sprite[i].ja:=fAlse;
+      exit;
+     end;
+    end;
+   end;
+  end;
+ end;
 procedure bomb;
 var q:integer;
 begin
-if bomben>=1 then begin
+ if bomben>=1 then begin
   dec(bomben);
+  sprite[56].px:=10;sprite[56].py:=100;
+  Spiele_Vocdatei('bombe.voc',false);
   GetPal;                       {"Palette" mit aktuelle DAC-Palette laden}
   Move(Palette,OrigPal,768);    {Palette sichern}
-  for q:=1 to 767 do
-  palette1[q]:=random(256);
+  for q:=1 to 767 do palette1[q]:=random(256);
   Move(Palette1,Zielpal,768);    {Ziel-Palette bestimmen}
+  delay(200);
   Make_bw(ZielPal);             {ZielPal auf schwarz/weiá ziehen}
+  delay(200);
   fade_to(ZielPal,1);           {schwarz/weiáe Palette einblenden}
+  delay(200);
   fade_to(OrigPal,1);           {Original-Palette einblenden}
-for q:=21 to 35 do begin
-sprite[q].px:=300;
-sprite[q].py:=random(180);end;inc(p,7);
-end;end;
-Begin
-  bomben:=3;
-  writeln('Steuerung mit Maus. Schuss mit Maustaste. Ende mit bel. Taste');
-  readln;
-  leben:=3;
-  randomize;
-  Init_ModeX;                   {Mode X einschalten}
-    LoadGif('install');             {Hintergrundbild laden}
-  p13_2_ModeX(vpage,24000);     {und auf Hintergrundseite kopieren}
-chdir('c:\pcunder\grafik');
-  LoadGif('ships3');           {Bild mit den drei Sprites laden}
-  GetSprite(1+3*320,11,6,Sprite[1]);  {Koordinaten (62/114), Breite 58*48}
-  GetSprite(1+3*320,11,6,Sprite[2]); {(203/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[3]); {(203/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[4]); {(133/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[5]);  {Koordinaten (62/114), Breite 58*48}
-  GetSprite(1+3*320,11,6,Sprite[6]); {(203/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[7]); {(203/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[8]); {(133/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[9]);  {Koordinaten (62/114), Breite 58*48}
-  GetSprite(1+3*320,11,6,Sprite[10]);
-  GetSprite(1+3*320,11,6,Sprite[11]);  {Koordinaten (62/114), Breite 58*48}
-  GetSprite(1+3*320,11,6,Sprite[12]); {(203/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[13]); {(203/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[14]); {(133/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[15]);  {Koordinaten (62/114), Breite 58*48}
-  GetSprite(1+3*320,11,6,Sprite[16]); {(203/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[17]); {(203/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[18]); {(133/114), 58*48}
-  GetSprite(1+3*320,11,6,Sprite[19]);  {Koordinaten (62/114), Breite 58*48}
-  GetSprite(18+2*320,11,9,Sprite[20]); {(203/114), 58*48}
-  {GetSprite(7+17*320,13,9,Sprite[13]); {(203/114), 58*48}
-  GetSprite(18+2*320,11,9,Sprite[21]); {(203/114), 58*48}
- GetSprite(7+17*320,13,9,Sprite[22]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[23]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[24]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[25]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[26]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[27]); {(203/114), 58*48}
- GetSprite(7+17*320,13,9,Sprite[28]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[29]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[30]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[31]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[32]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[33]); {(203/114), 58*48}
- GetSprite(7+17*320,13,9,Sprite[34]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[35]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[36]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[37]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[38]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[39]); {(203/114), 58*48}
- GetSprite(7+17*320,13,9,Sprite[30]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[31]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[32]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[33]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[34]); {(203/114), 58*48}
-  GetSprite(7+17*320,13,9,Sprite[35]); {(203/114), 58*48}
-
- GetSprite(30+19*320,12,14,Sprite[36]); {(203/114), 58*48}
- GetSprite(30+19*320,12,14,Sprite[37]); {(203/114), 58*48}
- GetSprite(30+19*320,12,14,Sprite[38]); {(203/114), 58*48}
- GetSprite(30+19*320,12,14,Sprite[39]); {(203/114), 58*48}
- GetSprite(30+19*320,12,14,Sprite[40]); {(203/114), 58*48}
- GetSprite(30+19*320,12,14,Sprite[41]); {(203/114), 58*48}
- GetSprite(30+19*320,12,14,Sprite[42]); {(203/114), 58*48}
- GetSprite(30+19*320,12,14,Sprite[43]); {(203/114), 58*48}
- GetSprite(30+19*320,12,14,Sprite[44]); {(203/114), 58*48}
-
-asm
-mov ax,0;
-int $33;
+  delay(200);
+  for q:=41 to 55 do begin
+   sprite[q].px:=300;
+   sprite[q].py:=random(180);
+  end;
+  inc(p,7);
+ end;
+ sprite[56].px:=10;sprite[56].py:=100;
 end;
- for i:=1 to 19 do sprite[i].ja:=false;
- for i:=36 to 44 do sprite[i].ja:=false;
- for i:=21 to 35 do begin sprite[i].px:=200;sprite[i].py:=100;end;
+
+
+
+Begin
+ boni:=3;
+ streu:=true;
+ cheat:=3;
+ Init_SB;
+ delay(1333);
+ bomben:=3;
+ textbackground(red);
+ textcolor(green);
+ clrscr;
+ writeln('Player 1 : Steuerung mit Maus. Schuss mit Maustaste.');
+ writeln('Player 2 : Steuerung mit Pfeiltasten. Schuss mit Leertaste');
+ writeln('Bombe abwerfen mit b oder B. Ende mit <ESC>');
+ readln;
+ leben:=3;
+ randomize;
+ Init_ModeX;                   {Mode X einschalten}
+ LoadGif('back');             {Hintergrundbild laden}
+ p13_2_ModeX(vpage,24000);     {und auf Hintergrundseite kopieren}
+ LoadGif('actions2');           {Bild mit den drei Sprites laden}
+ GetSprite(1+3*320,11,6,Sprite[1]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[2]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[3]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[4]); {(133/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[5]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[6]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[7]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[8]); {(133/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[9]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[10]);
+ GetSprite(1+3*320,11,6,Sprite[11]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[12]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[13]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[14]); {(133/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[15]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[16]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[17]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[18]); {(133/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[19]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[20]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[21]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[22]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[23]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[24]); {(133/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[25]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[26]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[27]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[28]); {(133/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[29]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[30]);
+ GetSprite(1+3*320,11,6,Sprite[31]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[32]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[33]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[34]); {(133/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[35]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(1+3*320,11,6,Sprite[36]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[37]); {(203/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[38]); {(133/114), 58*48}
+ GetSprite(1+3*320,11,6,Sprite[39]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(18+2*320,11,9,Sprite[40]); {(203/114), 58*48}
+ GetSprite(18+2*320,11,9,Sprite[41]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[42]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[43]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[44]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[45]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[46]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[47]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[48]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[49]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[50]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[51]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[52]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[53]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[54]); {(203/114), 58*48}
+ GetSprite(7+17*320,13,9,Sprite[55]); {(203/114), 58*48}
+ GetSprite(18+2*320,11,9,Sprite[56]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[57]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[58]); {(133/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[59]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(28+37*320,9,3,Sprite[60]);
+ GetSprite(28+37*320,9,3,Sprite[61]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(28+37*320,9,3,Sprite[62]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[63]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[64]); {(133/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[65]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(28+37*320,9,3,Sprite[66]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[67]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[68]); {(133/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[69]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(28+37*320,9,3,Sprite[70]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(28+37*320,9,3,Sprite[71]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(28+37*320,9,3,Sprite[72]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[73]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[74]); {(133/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[75]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(28+37*320,9,3,Sprite[76]); {(203/114), 58*48}
+ GetSprite(28+37*320,9,3,Sprite[77]); {(203/114), 58*48}
+ GetSprite(7+31*320,11,14,zz[1]);  {Koordinaten (62/114), Breite 58*48}
+ GetSprite(6+49*320,10,14,zz[2]); {(203/114), 58*48}
+ GetSprite(5+71*320,14,15,zz[3]); {(203/114), 58*48}
+ GetSprite(5+71*320,14,15,zz[4]); {(133/114), 58*48}
+ GetSprite(5+93*320,11,8,zz[5]);  {Koordinaten (62/114), Breite 58*48}
+
+ asm
+  mov ax,0;
+  int $33;
+ end;
+ for i:=1 to 39 do sprite[i].ja:=false;
+ for i:=41 to 55 do begin
+  sprite[i].px:=random(100)+120;
+  sprite[i].le:=6;sprite[i].py:=random(200);
+ end;
+ for i:=57 to 77 do sprite[i].ja:=false;
  c:=0;
  streu:=false;
  repeat
+  if random(10000)>9990 then spiele_vocdatei('plapper.voc',false);
   WaitRetrace;                {Bildschirm darf erst nach n„chstem Retrace}
   CopyScreen(vpage,24000);     {Hintergrundbild auf aktuelle Seite}
   copyscreen(24000,48000);
-  putship(tasty,tastX,20);
-  {if mauspressed=1 then schuss;
-  if mauspressed=2 then begin
-  if back then back:=false;
-  if streu then begin
-  streu:=false;back:=true;end else streu:=true;
-  end;}
-
-  for i:=1 to 19 do begin
-  if sprite[i].ja=true then begin
-inc(sprite[i].px,10);
-if sprite[i].px>=320 then sprite[i].ja:=false;
-  putsprite(24000,sprite[i].px,sprite[i].py,sprite[i]);
-  for ii:=21 to 35 do begin
-if sprite[ii].px<=1 then begin sprite[ii].py:=random(180)+1;sprite[ii].px:=310;end;
-if (sprite[i].px<=sprite[ii].px+10) and (sprite[i].py<=sprite[ii].py+10) and (sprite[i].px>=sprite[ii].px-10)
-  and (sprite[i].py>=sprite[ii].py-10) then begin
-  sound(700);delay(20);nosound;inc(p);sprite[i].ja:=false;sprite[ii].py:=random(180)+1;sprite[ii].px:=300;end;
-  end;end;end;
-  for i:=36 to 44 do begin
-  if sprite[i].ja=true then begin
-dec(sprite[i].px,20);
-if sprite[i].px<=5 then sprite[i].ja:=false;
-  putsprite(24000,sprite[i].px,sprite[i].py,sprite[i]);
-  for ii:=21 to 35 do begin
-if (sprite[i].px<=sprite[ii].px+10) and (sprite[i].py<=sprite[ii].py+10) and (sprite[i].px>=sprite[ii].px-10)
-  and (sprite[i].py>=sprite[ii].py-10) then begin
-  sound(700);delay(20);nosound;inc(p);sprite[i].ja:=false;sprite[ii].py:=random(180)+1;sprite[ii].px:=300;end;
-  end;end;end;
-{if (sprite[ii].px<=sprite[13].px+10) and (sprite[ii].py<=sprite[13].py+10) and (sprite[ii].px>=sprite[13].px-10)
-  and (sprite[ii].py>=sprite[13].py-10) then begin}
-  for ii:=21 to 35 do begin
-{ if (sprite[ii].px=sprite[13].px) and (sprite[ii].py=sprite[13].py) then begin
-sound(500);delay(100);nosound;sprite[13].px:=1;sprite[13].py:=100;dec(leben);
-if leben<=0 then begin
-textmode(3);halt;end;end;}
- dec(sprite[ii].px);
-    putsprite(24000,sprite[ii].px,sprite[ii].py,sprite[ii]);
-  if sprite[ii].px<=5 then begin
-  dec(leben);sprite[ii].py:=random(180)+1;sprite[ii].px:=310;if leben<1 then begin
-  for z:=15000 downto 0 do
-  sound(z);nosound;
-textmode(3);writeln('Points: ',p*100);readlN;halt;end;end;
+  putship(mausy,MAUSX,40);
+  putship(sprite[56].py,sprite[56].px,56);
+  if mauspressed=1 then begin
+   for qq:=2 to boni do schuss(40);
   end;
-  if keypressed then begin
-  a:=readkey;
-  if upcase(a)=('B') then bomb;
-  case a of
-  #75:if tastx>1 then dec(tastx,10);
-  #77:if tastx<320 then inc(tastx,10);
-  #80:if tasty<200 then inc(tasty,10);
-  #72:if tasty>1 then dec(tasty,10);
-  #32:schuss;
+  for i:=1 to 39 do begin
+   if sprite[i].ja=true then begin
+    inc(sprite[i].px,10);
+    if sprite[i].px>=320 then sprite[i].ja:=false;
+    putsprite(24000,sprite[i].px,sprite[i].py,sprite[i]);
+    for ii:=41 to 55 do begin
+     if sprite[ii].px<=1 then begin
+      sprite[ii].py:=random(180)+1;
+      sprite[ii].px:=310;
+     end;
+     if (sprite[i].px<=sprite[ii].px+10) and (sprite[i].py<=sprite[ii].py+10) and (sprite[i].px>=sprite[ii].px-10)
+     and (sprite[i].py>=sprite[ii].py-10) then begin
+      dec(sprite[ii].le);sprite[i].ja:=false;
+      if sprite[ii].le<1 then begin
+       inc(p);
+       if random(10000)>9500 then spiele_vocdatei('asta.voc',false);
+       putsprite(vpage,sprite[ii].px,sprite[ii].py-5,zz[1]);
+       delay(100);
+       putsprite(vpage,sprite[ii].px,sprite[ii].py-5,zz[2]);
+       delay(100);
+       putsprite(vpage,sprite[ii].px,sprite[ii].py-5,zz[3]);
+       delay(100);
+       if p>(boni*20) then begin
+        spiele_vocdatei('level.voc',false);
+        streu:=true;inc(boni);
+       end;
+       sprite[ii].py:=random(180)+1;sprite[i].le:=6;
+       sprite[ii].px:=300;
+      end;
+     end;
+    end;
+   end;
   end;
+  for i:=57 to 77 do begin
+   if sprite[i].ja=true then begin
+    inc(sprite[i].px,10);
+    if sprite[i].sx>0 then inc(sprite[i].py,5) else dec(sprite[i].py,5);
+    if sprite[i].px>=315 then sprite[i].ja:=false;
+    if sprite[i].py>=195 then sprite[i].ja:=false;
+    if sprite[i].py<=5 then sprite[i].ja:=false;
+    putsprite(24000,sprite[i].px,sprite[i].py,sprite[i]);
+    for ii:=41 to 55 do begin
+     if sprite[ii].px<=1 then begin
+      sprite[ii].py:=random(180)+1;
+      sprite[ii].px:=310;
+     end;
+     if (sprite[i].px<=sprite[ii].px+10) and (sprite[i].py<=sprite[ii].py+10) and (sprite[i].px>=sprite[ii].px-10)
+     and (sprite[i].py>=sprite[ii].py-10) then begin
+      dec(sprite[ii].le);sprite[i].ja:=false;
+      if sprite[ii].le<1 then begin
+       inc(p);
+       putsprite(vpage,sprite[ii].px,sprite[ii].py-5,zz[1]);
+       delay(100);
+       putsprite(vpage,sprite[ii].px,sprite[ii].py-5,zz[2]);
+       delay(100);
+       putsprite(vpage,sprite[ii].px,sprite[ii].py-5,zz[3]);
+       delay(100);
+       if p>(boni*20) then begin
+        spiele_vocdatei('level.voc',false);
+        streu:=true;
+        inc(boni);
+       end;
+       sprite[ii].py:=random(180)+1;sprite[i].le:=6;
+       sprite[ii].px:=300;
+      end;
+     end;
+    end;
+   end;
   end;
-  until a=#27;
+  for ii:=41 to 55 do begin
+   if sprite[ii].le>6 then sprite[ii].le:=6;
+   dec(sprite[ii].px,boni-cheat);
+   putsprite(24000,sprite[ii].px,sprite[ii].py,sprite[ii]);
+   if sprite[ii].px<=1 then begin
+    dec(leben);
+    spiele_vocdatei('ohdear.voc',false);
+    inc(bomben);
+    bomb;
+    sprite[ii].py:=random(180)+1;sprite[ii].px:=310;
+    if leben<1 then begin
+     spiele_vocdatei('ende.voc',false);
+     TextMode(3);
+     textbackground(red);
+     textcolor(green);
+     writeln('Erreichtes Level: ',boni-1);
+     writeln('Points: ',p*100);
+     halt;
 
-nosound;
-
-  port[$60]:=$f5;port[$60]:=$f4;
-  TextMode(3);
-  writeln('POINTS: ',p*100);readlN;
+    end;
+   end;
+  end;
+    if keydown[$39] then for qq:=1 to boni do schuss(56);
+    if keydown[$48] then if sprite[56].py>5 then dec(sprite[56].py,10);
+    if keydown[$4B] then if sprite[56].px>5 then dec(sprite[56].px,10);
+    if keydown[$4D] then if sprite[56].px<315 then inc(sprite[56].px,10);
+    if keydown[$50] then if sprite[56].py<195 then inc(sprite[56].py,10);
+    if keydown[$30] then bomb;
+    if keydown[$0F] then
+    begin
+     spiele_vocdatei('ratch2.voc',false);
+     if streu=true then begin
+      missile:=false;streu:=false;
+     end else begin
+      if missile=true then begin streu:=true;missile:=false;end else missile:=true;
+     end;
+    end;
+ until keydown[1];
+ TextMode(3);
+ textbackground(red);
+ textcolor(green);
+ writeln('Erreichtes Level: ',boni-1);
+ writeln('Points: ',p*100);
+ spiele_vocdatei('ende.voc',false);
 End.
